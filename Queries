@@ -1,0 +1,94 @@
+/* Select dates and commodities for cities Quetta, Karachi, and Peshawar where price was less than or equal 50 PKR */
+set sql_safe_updates=0;
+update wfp_food_prices_pakistan
+set date = date_format(STR_TO_DATE(date,'m%,d%,Y%'),'Y%,m%,d%');
+select * from wfp_food_prices_pakistan;
+select * from commodity;
+select date, cmname, price from wfp_food_prices_pakistan
+where price <=50;
+
+/* Query to check number of observations against each market/city in PK */
+select mktname, Count(*) as no_of_observations
+from wfp_food_prices_pakistan
+group by mktname;
+
+/* Show number of distinct cities */
+select count(distinct mktname) as cities
+from wfp_food_prices_pakistan;
+
+/* down/show the names of cities in the table */
+select distinct(mktname) as city_name
+from wfp_food_prices_pakistan;
+
+/* List down/show the names of commodities in the table */
+select cmname,count(*) as commodity_observations
+from wfp_food_prices_pakistan
+group by cmname;
+select cmname
+from commodity;
+
+/* List Average Prices for Wheat flour - Retail in EACH city separately over the entire period */
+select cmname, mktname, Round(avg(price),2) as Average_Price
+from wfp_food_prices_pakistan
+where cmname = "Wheat flour - Retail"
+group by mktname;
+
+/*Calculate summary stats (avg price, max price) for each city separately for all cities except Karachi and sort alphabetically 
+the city names, commodity names where commodity is Wheat (does not matter which one) with separate rows for each commodity */
+select mktname as City, cmname as Commodity, round(avg(price),2) as Avgerage_price, max(price) as Max_price
+from wfp_food_prices_pakistan
+where cmname like '%Wheat%' 
+and mktname Not in ('Karachi')
+group by
+mktname, cmname
+order by 
+mktname asc, cmname asc;
+
+/* Calculate Avg_prices for each city for Wheat Retail and show only those avg_prices which are less than 30 */
+select mktname as City, cmname as Commodity, round(avg(price),2) as Average_price
+from wfp_food_prices_pakistan
+where cmname In ('Wheat - Retail')
+group by mktname, cmname
+having Average_price<30
+order by Average_price desc;
+
+/* Prepare a table where you categorize prices based on a logic (price < 30 is LOW, price > 250 is HIGH, in between are FAIR) */
+select mktname as City, cmname as Commodity, price,
+case
+when price<30 then 'LOW'
+when price >30 < 250 then 'FAIR'
+when price > 250 then 'HIGH'
+End as Price_class
+from wfp_food_prices_pakistan;
+
+/* Create a query showing date, cmname, category, city, price, city_category where Logic for city category is: 
+Karachi and Lahore are 'Big City', Multan and Peshawar are 'Medium-sized city', Quetta is 'Small City' */
+select date, cmname, category, mktname as City, price, 
+case 
+when mktname IN ('Karachi','Lahore') then 'Big City'
+when mktname IN ('Multan','Peshawar') then 'Medium-sized city'
+when mktname IN ('Quetta') then 'Small City'
+end as City_Category
+from wfp_food_prices_pakistan;
+
+/* Create a query to show date, cmname, city, price. Create new column price_fairness through CASE 
+showing price is fair if less than 100, unfair if more than or equal to 100, if > 300 then 'Speculative' */
+select date, cmname, mktname as City, price,
+case 
+when price < 100 then 'Fair'
+when price >=100 and price <300 then 'Unfair'
+when price >300 then 'Speculative'
+end as Price_fairness
+from wfp_food_prices_pakistan;
+
+/* Join the food prices and commodities table with a left join */
+SELECT * FROM  commodity
+LEFT JOIN wfp_food_prices_pakistan
+ON commodity.cmname = wfp_food_prices_pakistan.cmname;
+
+/*Join the food prices and commodities table with an inner join*/
+SELECT * FROM  wfp_food_prices_pakistan
+Inner join commodity
+ON wfp_food_prices_pakistan.cmname = commodity.cmname;
+
+/* Thank You very much */
